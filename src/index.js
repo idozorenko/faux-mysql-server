@@ -235,7 +235,7 @@ export default class Server {
 
   let databaseEnd = packet.indexOf(0,ptr);
   if (databaseEnd >= 0) {
-   database = data.toString('ascii',ptr,databaseEnd);
+   database = packet.toString('ascii',ptr,databaseEnd);
   }
   this.onPacket = null;
 

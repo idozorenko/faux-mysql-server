@@ -112,7 +112,7 @@ var Server = function () {
 
       var databaseEnd = packet.indexOf(0, ptr);
       if (databaseEnd >= 0) {
-        database = data.toString('ascii', ptr, databaseEnd);
+        database = packet.toString('ascii', ptr, databaseEnd);
       }
       _this.onPacket = null;
 
@@ -383,15 +383,15 @@ var Server = function () {
     value: function readPackets(buf) {
       var offset = 0;
       while (true) {
-        var _data = buf.slice(offset);
-        if (_data.length < 4) return _data;
+        var data = buf.slice(offset);
+        if (data.length < 4) return data;
 
-        var packetLength = _data.readUIntLE(0, 3);
-        if (_data.length < packetLength + 4) return _data;
+        var packetLength = data.readUIntLE(0, 3);
+        if (data.length < packetLength + 4) return data;
 
-        this.sequence = _data.readUInt8(3) + 1;
+        this.sequence = data.readUInt8(3) + 1;
         offset += packetLength + 4;
-        var packet = _data.slice(4, packetLength + 4);
+        var packet = data.slice(4, packetLength + 4);
 
         this.onPacket(packet);
         this.packetCount++;
