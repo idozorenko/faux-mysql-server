@@ -6,16 +6,16 @@ export * as consts from './constants';
 export default class Server {
  constructor(opts) {
   Object.assign(this,opts);
-  
+
   if (! this.banner) this.banner = "MyServer/1.0";
-  if (! this.salt) this.salt = crypto.randomBytes(20); 
+  if (! this.salt) this.salt = crypto.randomBytes(20);
   this.sequence = 0;
   this.onPacket = this.helloPacketHandler;
   this.incoming = [];
-  
+
   this.socket.on('data', this.handleData);
   this.socket.on('end', this.handleDisconnect);
-  
+
   this.sendServerHello();
  }
 
@@ -31,7 +31,7 @@ export default class Server {
  sendPacket(payload) {
   return this.socket.write(payload);
  }
- 
+
  newDefinition(params) {
   return {
    catalog: params.catalog ? params.catalog : 'def',
@@ -53,7 +53,7 @@ export default class Server {
   let payload = Buffer.alloc(1024);
   let len = 4;
   len = writeLengthCodedBinary(payload,len,definitions.length);
-  this.writeHeader(payload,len); 
+  this.writeHeader(payload,len);
   this.sendPacket(payload.slice(0,len));
 
   // Write each definition
@@ -71,10 +71,10 @@ export default class Server {
    len = payload.writeUInt8(definition.decimals ? definition.decimals : 0, len);
    len = payload.writeUInt16LE(0,len); // \0\0 FILLER
    len = writeLengthCodedString(payload,len,definition['default']);
-   this.writeHeader(payload,len); 
+   this.writeHeader(payload,len);
    this.sendPacket(payload.slice(0,len));
   }
-  
+
   this.sendEOF();
  }
 
@@ -88,7 +88,7 @@ export default class Server {
     len = writeLengthCodedString(payload,len,cell);
    }
   }
-  this.writeHeader(payload,len); 
+  this.writeHeader(payload,len);
   this.sendPacket(payload.slice(0,len));
  }
 
@@ -107,7 +107,7 @@ export default class Server {
   len = payload.writeUInt8(0xFE,len);
   len = payload.writeUInt16LE(warningCount,len);
   len = payload.writeUInt16LE(serverStatus,len);
-  this.writeHeader(payload,len); 
+  this.writeHeader(payload,len);
   this.sendPacket(payload.slice(0,len));
  }
 
@@ -116,7 +116,7 @@ export default class Server {
   let payload = Buffer.alloc(128);
   let pos = 4;
   pos = payload.writeUInt8(10,pos); // Protocol version
-  
+
   pos += payload.write(this.banner || "MyServer/1.0",pos);
   pos = payload.writeUInt8(0,pos);
 
@@ -126,9 +126,9 @@ export default class Server {
   pos = payload.writeUInt8(0,pos);
 
   pos = payload.writeUInt16LE(
-   consts.CLIENT_LONG_PASSWORD | 
-   consts.CLIENT_CONNECT_WITH_DB | 
-   consts.CLIENT_PROTOCOL_41 | 
+   consts.CLIENT_LONG_PASSWORD |
+   consts.CLIENT_CONNECT_WITH_DB |
+   consts.CLIENT_PROTOCOL_41 |
    consts.CLIENT_SECURE_CONNECTION
   , pos);
 
@@ -143,7 +143,7 @@ export default class Server {
 
   pos += this.salt.copy(payload,pos,8);
   pos = payload.writeUInt8(0,pos);
-  this.writeHeader(payload,pos); 
+  this.writeHeader(payload,pos);
 
   return this.sendPacket(payload.slice(0,pos));
  }
@@ -158,7 +158,7 @@ export default class Server {
    this.socket.destroy();
   }
  }
- 
+
  gatherIncoming() {
   let incoming;
   if (this.incoming.length > 0) {
@@ -169,7 +169,7 @@ export default class Server {
    incoming = Buffer.alloc(len);
    len = 0;
    for (let buf of this.incoming) {
-    len += buf.copy(incoming,len); 
+    len += buf.copy(incoming,len);
    }
   } else {
    incoming = this.incoming[0];
@@ -177,22 +177,22 @@ export default class Server {
   let remaining = this.readPackets(incoming);
   this.incoming = [Buffer.from(remaining)];
  }
- 
+
  readPackets(buf) {
   let offset = 0;
   while (true) {
    let data = buf.slice(offset);
    if (data.length < 4) return data;
-  
+
    let packetLength = data.readUIntLE(0,3);
    if (data.length < packetLength + 4) return data;
 
-   this.sequence = data.readUIntLE(3) + 1;
+   this.sequence = data.readUInt8(3) + 1;
    offset += packetLength + 4;
    let packet = data.slice(4,packetLength + 4);
-   
+
    this.onPacket(packet);
-   this.packetCount++; 
+   this.packetCount++;
   }
  }
 
@@ -213,7 +213,7 @@ export default class Server {
 
   this.clientCharset = packet.readUInt8(ptr);
   ptr++;
- 
+
   let filler1 = packet.slice(ptr,ptr+23);
   ptr += 23;
 
@@ -230,7 +230,7 @@ export default class Server {
    this.scramble = packet.slice(ptr,ptr+scrambleLength);
    ptr += scrambleLength;
   }
- 
+
   let database;
 
   let databaseEnd = packet.indexOf(0,ptr);
@@ -238,7 +238,7 @@ export default class Server {
    database = data.toString('ascii',ptr,databaseEnd);
   }
   this.onPacket = null;
-    
+
   return Promise.resolve(this.onAuthorize({ clientFlags, maxPacketSize, username, database }))
   .then( (authorized) => {
    if (! authorized) throw "Not Authorized";

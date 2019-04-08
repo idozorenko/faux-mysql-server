@@ -389,7 +389,7 @@ var Server = function () {
         var packetLength = _data.readUIntLE(0, 3);
         if (_data.length < packetLength + 4) return _data;
 
-        this.sequence = _data.readUIntLE(3) + 1;
+        this.sequence = _data.readUInt8(3) + 1;
         offset += packetLength + 4;
         var packet = _data.slice(4, packetLength + 4);
 
