@@ -1,13 +1,17 @@
 import net from 'net';
 import FMS, {consts} from './src';
 
+let server, col;
 net.createServer((so) => {
- let server = new FMS({
+ server = new FMS({
   socket: so,
   banner: "Fake Mysql/1.0",
   onAuthorize: handleAuthorize,
   onCommand: handleCommand
  });
+ col = params => {
+  return server.newDefinition(typeof params === `string` || params instanceof String ? { name: params } : params);
+ };
 }).listen(3306);
 
 console.log("Started server on port 3306");
@@ -44,11 +48,8 @@ function handleCommand({command, extra}) {
 function handleQuery(query) {
  // Take the query, print it out
  console.log("Got Query: " + query);
- 
+
  // Then send it back to the user in table format
- this.sendDefinitions([this.newDefinition({ name: 'TheCommandYouSent'})]);
- this.sendRows([
-  [query]
- ]);
+ this.sendQueryResponse([col(`Type`), col(`Command`)], [[`Echo`, query]]);
 }
 
